@@ -1,7 +1,7 @@
 ﻿namespace TelemetrySrcGen;
 
 /// <summary>
-/// Code generation for building a typed proxy
+///   Code generation for building a typed proxy
 /// </summary>
 [AttributeUsage(AttributeTargets.Interface, AllowMultiple = false)]
 public class ProxyAttribute : Attribute

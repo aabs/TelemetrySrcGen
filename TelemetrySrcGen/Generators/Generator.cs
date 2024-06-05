@@ -2,12 +2,10 @@
 #pragma warning disable HAA0601 // Value type to reference type conversion causing boxing allocation
 #pragma warning disable HAA0401 // Possible allocation of reference type enumerator
 using System.Collections.Immutable;
-using System;
 using System.Text;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Threading;
 using TelemetrySrcGen.Helpers;
 
 namespace TelemetrySrcGen;
@@ -15,8 +13,8 @@ namespace TelemetrySrcGen;
 [Generator]
 public partial class Generator : IIncrementalGenerator
 {
-    protected const string TargetAttribute = "ProxyAttribute";
-    protected const string MethodTargetAttribute = "ProxyRouteAttribute";
+    protected const string TargetAttribute = "TelemetrySourceAttribute";
+    protected const string MethodTargetAttribute = "TelemetryPropertyAttribute";
 
     private static bool AttributePredicate(SyntaxNode syntaxNode, CancellationToken cancellationToken)
     {
@@ -83,7 +81,7 @@ public partial class Generator : IIncrementalGenerator
             return;
 
         #region Error Handling
-
+        /*
         if (!typeSymbol.TryGetValue(TargetAttribute, "template", out string clsTemplate))
         {
             var diagnostic = Diagnostic.Create(
@@ -93,9 +91,38 @@ public partial class Generator : IIncrementalGenerator
                 Location.None);
             context.ReportDiagnostic(diagnostic);
         }
-
+        */
         #endregion // Error Handling
 
+        GenerateMetricClass(context, typeSymbol, syntax);
+    }
+
+    private void GenerateMetricClass(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax)
+    {
+        try
+        {
+            StringBuilder builder = new StringBuilder();
+            var name = typeSymbol.Name;
+            var asm = GetType().Assembly.GetName();
+            builder.AppendHeader(syntax, typeSymbol);
+            builder.AppendLine("using System.Net.Http.Json;");
+            builder.AppendLine();
+
+            builder.AppendLine($"[System.CodeDom.Compiler.GeneratedCode(\"{asm.Name}\",\"{asm.Version}\")]");
+            builder.AppendLine($"public partial class {name} //blah");
+            builder.AppendLine("{}");
+
+
+            context.AddSource($"{name}.g.cs", builder.ToString());
+        }
+        catch (Exception e)
+        {
+        }
+
+    }
+    /*
+    private void GenerateClass(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax)
+    {
         StringBuilder builder = new StringBuilder();
         builder.AppendHeader(syntax, typeSymbol);
 
@@ -229,7 +256,7 @@ public partial class Generator : IIncrementalGenerator
 
         builder.AppendLine("}");
 
-        context.AddSource($"{ name}.generated.cs", builder.ToString());
+        context.AddSource($"{name}.generated.cs", builder.ToString());
 
         builder = new StringBuilder();
         builder.AppendHeader(syntax, typeSymbol);
@@ -247,6 +274,6 @@ public partial class Generator : IIncrementalGenerator
 
         context.AddSource($"{name}DiExtensions.generated.cs", builder.ToString());
     }
-
+    */
     #endregion // OnGenerate
 }

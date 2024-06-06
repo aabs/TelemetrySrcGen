@@ -1,11 +1,25 @@
-﻿namespace TelemetrySrcGen.Abstractions.Playground;
+﻿using Microsoft.ApplicationInsights;
+
+namespace TelemetrySrcGen.Abstractions.Playground;
 
 [TelemetrySource]
 public partial class MyIngestionTelemetry
 {
-  [TelemetryProperty]
-  public double IngestionTime { get; set; }
+    private TelemetryClient telemetryClient;
 
-  [Timer]
-  public double IngestionDuration { get; set; }
+    public MyIngestionTelemetry(TelemetryClient telemetryClient)
+    {
+        this.telemetryClient = telemetryClient;
+    }
+
+    [Measurement(MetricKind.Duration)]
+    public bool IngestionProcess;
+
+    [Measurement(MetricKind.Duration)]
+    public bool DeliveryTime;
+
+    [Measurement(MetricKind.Counter)]
+    public double DataPointsReceived;
+
+    public partial void CallApi();
 }

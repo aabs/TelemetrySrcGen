@@ -8,6 +8,20 @@ namespace TelemetrySrcGen.Helpers;
 
 internal static class RoslynExtensions
 {
+
+    public static bool HasMeasurementAttribute(this ISymbol s, TelemetrySrcGen.MetricKind kind)
+    {
+        if (s is IFieldSymbol f)
+        {
+            return f.GetAttributes().Any(a => a.AttributeClass.Name == nameof(MeasurementAttribute) && a.ConstructorArguments.Length > 0 && a.ConstructorArguments[0].Value is int v && v == (int)kind);
+        }
+        else if (s is IMethodSymbol m)
+        {
+            return m.GetAttributes().Any(a => a.AttributeClass.Name == nameof(MeasurementAttribute) && a.ConstructorArguments.Length > 0 && a.ConstructorArguments[0].Value is int v && v == (int)kind);
+        }
+        return false;
+    }
+
     #region MatchAttribute
 
     /// <summary>
@@ -24,6 +38,43 @@ internal static class RoslynExtensions
     {
         if (node is TypeDeclarationSyntax type)
             return type.MatchAttribute(attributeName, cancellationToken);
+        else if (node is MethodDeclarationSyntax method)
+            return method.MatchAttribute(attributeName, cancellationToken);
+        else if (node is IPropertySymbol prop)
+            return prop.MatchPropertyAttribute(attributeName, cancellationToken);
+        return false;
+    }
+
+    /// <summary>
+    /// Check if a type matches an attribute.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <param name="attributeName">Name of the attribute.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns></returns>
+    public static bool MatchPropertyAttribute(
+                            this IPropertySymbol node,
+                            string attributeName,
+                            CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested) return false;
+
+        var (attributeName1, attributeName2) = RefineAttributeNames(attributeName);
+
+        bool hasAttributes = node.GetAttributes().Any
+                               (m1 =>
+                               {
+                                   string name = m1.AttributeClass.Name.ToString();
+                                   bool match = name == attributeName1 || name == attributeName2;
+                                   return match;
+                               });
+        return hasAttributes;
+
+        if (node is TypeDeclarationSyntax type)
+        {
+            return type.MatchAttribute(attributeName, cancellationToken);
+        }
+
         return false;
     }
 
@@ -52,6 +103,7 @@ internal static class RoslynExtensions
                                }));
         return hasAttributes;
     }
+
 
     #endregion // MatchAttribute
 
@@ -232,5 +284,38 @@ internal static class RoslynExtensions
     }
 
     #endregion // GetNestedBaseTypesAndSelf
+    /*
+    public static AttributeData GetBlockAttr(this SyntaxAndSymbol s)
+        => s.Symbol.GetBlockAttr();
 
+    public static IEnumerable<AttributeData> GetNextStepAttrs(this IMethodSymbol ms)
+    {
+        return ms.GetAttributes().Where(a => a.AttributeClass.Name == nameof(NextStepAttribute));
+    }
+
+    public static AttributeData GetNextStepAttr(this IMethodSymbol ms)
+    {
+        return ms.GetAttributes().FirstOrDefault(a => a.AttributeClass.Name == nameof(NextStepAttribute));
+    }
+
+    public static AttributeData GetBlockAttr(this IMethodSymbol ms)
+    {
+        string[] attrNames = new[]{nameof(StepAttribute), nameof(FirstStepAttribute), nameof(LastStepAttribute) };
+        return ms.GetAttributes().FirstOrDefault(a => attrNames.Any(x => x == a.AttributeClass.Name));
+    }
+
+    public static AttributeData GetBlockAttr(this INamedTypeSymbol s)
+    {
+        string[] attrNames = new[]{nameof(StepAttribute), nameof(FirstStepAttribute), nameof(LastStepAttribute) };
+        return s.GetAttributes().FirstOrDefault(a => attrNames.Any(x => x == a.AttributeClass.Name));
+    }
+
+    public static T GetArg<T>(this AttributeData a, int ord) => (T)a.ConstructorArguments[ord].Value;
+
+    public static bool IsStartStep(this IMethodSymbol method)
+        => method?.GetBlockAttr()?.AttributeClass?.Name.Equals(nameof(FirstStepAttribute), StringComparison.InvariantCultureIgnoreCase) ?? false;
+
+    public static bool IsEndStep(this IMethodSymbol method)
+        => method?.GetBlockAttr()?.AttributeClass?.Name.Equals(nameof(LastStepAttribute), StringComparison.InvariantCultureIgnoreCase) ?? false;
+    */
 }

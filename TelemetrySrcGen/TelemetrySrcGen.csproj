@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-		<LangVersion>10</LangVersion>
+		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
 		<Description>Source Generators</Description>
 		<Configurations>Debug;Release;Gen</Configurations>
@@ -40,6 +40,11 @@
 		  <Pack>True</Pack>
 		  <PackagePath>\</PackagePath>
 		</None>
+	</ItemGroup>
+
+
+	<ItemGroup>
+	  <ProjectReference Include="..\TelemetrySrcGen.Abstractions\TelemetrySrcGen.Abstractions.csproj" />
 	</ItemGroup>
 
 

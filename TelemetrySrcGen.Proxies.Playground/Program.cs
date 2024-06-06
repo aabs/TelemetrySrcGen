@@ -4,4 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 using TelemetrySrcGen.Abstractions.Playground;
 
-var x = new MyIngestionTelemetry();
+var x = new MyIngestionTelemetry(new Microsoft.ApplicationInsights.TelemetryClient());
+
+using (x.RecordIngestionProcessDuration())
+{
+    Console.WriteLine("Hello World");
+}

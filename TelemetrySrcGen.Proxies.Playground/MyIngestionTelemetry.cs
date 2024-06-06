@@ -21,5 +21,9 @@ public partial class MyIngestionTelemetry
     [Measurement(MetricKind.Counter)]
     public double DataPointsReceived;
 
-    public partial void CallApi();
+    [Measurement(MetricKind.Operation)]
+    public bool CallApi;
+
+    [Measurement(MetricKind.Event)]
+    public partial void OnPollingSucceeded(IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null);
 }

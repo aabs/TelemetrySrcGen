@@ -38,8 +38,8 @@ internal static class RoslynExtensions
     {
         if (node is TypeDeclarationSyntax type)
             return type.MatchAttribute(attributeName, cancellationToken);
-        else if (node is MethodDeclarationSyntax method)
-            return method.MatchAttribute(attributeName, cancellationToken);
+        else if (node is IMethodSymbol method)
+            return method.MatchMethodAttribute(attributeName, cancellationToken);
         else if (node is IPropertySymbol prop)
             return prop.MatchPropertyAttribute(attributeName, cancellationToken);
         return false;
@@ -54,6 +54,32 @@ internal static class RoslynExtensions
     /// <returns></returns>
     public static bool MatchPropertyAttribute(
                             this IPropertySymbol node,
+                            string attributeName,
+                            CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested) return false;
+
+        var (attributeName1, attributeName2) = RefineAttributeNames(attributeName);
+
+        bool hasAttributes = node.GetAttributes().Any
+                               (m1 =>
+                               {
+                                   string name = m1.AttributeClass.Name.ToString();
+                                   bool match = name == attributeName1 || name == attributeName2;
+                                   return match;
+                               });
+        return hasAttributes;
+
+        if (node is TypeDeclarationSyntax type)
+        {
+            return type.MatchAttribute(attributeName, cancellationToken);
+        }
+
+        return false;
+    }
+
+    public static bool MatchMethodAttribute(
+                            this IMethodSymbol node,
                             string attributeName,
                             CancellationToken cancellationToken)
     {

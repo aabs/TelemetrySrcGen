@@ -83,10 +83,11 @@ public partial class Generator : IIncrementalGenerator
         builder.AppendLine("{");
         GenerateCounters(context, typeSymbol, syntax, builder);
         GenerateGauges(context, typeSymbol, syntax, builder);
+        GenerateOperations(context, typeSymbol, syntax, builder);
         GenerateTimers(context, typeSymbol, syntax, builder);
+        GenerateEvents(context, typeSymbol, syntax, builder);
         builder.AppendLine("}");
 
-        Debug.WriteLine(builder.ToString());
         context.AddSource($"{name}.g.cs", builder.ToString());
 
 
@@ -143,26 +144,32 @@ public partial class Generator : IIncrementalGenerator
     {
         foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Operation)))
         {
-            if (item is not IMethodSymbol methodSymbol)
+            if (item is not IFieldSymbol fieldSymbol)
                 continue;
 
-            string methodName = methodSymbol.Name;
+            string fieldName = fieldSymbol.Name;
+            string fieldType = fieldSymbol.Type.Name;
             builder.AppendLine($$"""
-                    public void Start{{methodName}}() 
-                      => _tc.StartOperation<RequestTelemetry>("{{methodName}}");
+                    public void Start{{fieldName}}() 
+                      => _tc.StartOperation<RequestTelemetry>("{{fieldName}}");
                 """);
         }
     }   
-    private void GenerateEvent(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
+    private void GenerateEvents(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
     {
+        // events make use of partial methods to define what invoking the event would look like. It must have a null result type
         foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Event)))
         {
             if (item is not IMethodSymbol methodSymbol)
                 continue;
+            if (!methodSymbol.IsPartialDefinition)
+            {
+                continue;
+            }
 
             string methodName = methodSymbol.Name;
             builder.AppendLine($$"""
-                    public void {{methodName}}(IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null) 
+                    public partial void {{methodName}}(IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null) 
                       => _tc.TrackEvent({{methodName}}, properties, metrics);
                 """);
         }

@@ -4,7 +4,7 @@
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 		<Nullable>enable</Nullable>
-		<Description>Source Generators</Description>
+		<Description>A simple source generator to create the boilerplate code needed to report performance metrics via App Insights.</Description>
 		<Configurations>Debug;Release;Gen</Configurations>
 	</PropertyGroup>
 	
@@ -29,6 +29,8 @@
 		<AssemblyName>TelemetrySrcGen</AssemblyName>
 		<Title>TelemetrySrcGen</Title>
 		<PackageReadmeFile>ReadMe.md</PackageReadmeFile>
+		<PackageProjectUrl>https://github.com/aabs/TelemetrySrcGen</PackageProjectUrl>
+		<PackageReleaseNotes>just ironing out the initial setup of the nuget package</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<ItemGroup>

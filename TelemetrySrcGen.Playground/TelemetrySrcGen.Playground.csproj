@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\TelemetrySrcGen.Abstractions\TelemetrySrcGen.Abstractions.csproj">
+		<ProjectReference Include="..\TelemetrySrcGen.Abstractions\TelemetrySrcGen.Abstractions.csproj" OutputItemType="Analyzer">
 		  <ReferenceOutputAssembly>True</ReferenceOutputAssembly>
 		</ProjectReference>
 		<ProjectReference Include="..\TelemetrySrcGen\TelemetrySrcGen.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />

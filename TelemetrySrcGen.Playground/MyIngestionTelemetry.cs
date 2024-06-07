@@ -1,6 +1,6 @@
 ﻿using Microsoft.ApplicationInsights;
 
-namespace TelemetrySrcGen.Abstractions.Playground;
+namespace TelemetrySrcGen.Playground;
 
 [TelemetrySource]
 public partial class MyIngestionTelemetry
@@ -22,8 +22,8 @@ public partial class MyIngestionTelemetry
     public double DataPointsReceived;
 
     [Measurement(MetricKind.Operation)]
-    public bool CallApi;
+    public bool CallAPI;
 
-    [Measurement(MetricKind.Event)]
-    public partial void OnPollingSucceeded(IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null);
+    //[Measurement(MetricKind.Event)]
+    //public partial void OnPollingSucceeded(IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null); 
 }

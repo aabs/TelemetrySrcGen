@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
+	
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
-		<Description>Code generator for TelemetrySrcGen</Description>
+		<Description>Attribute and interface definitions for TelemetrySrcGen</Description>
 		<Configurations>Debug;Release;Gen</Configurations>
 		<IsRoslynComponent>true</IsRoslynComponent>
 		<AssemblyName>TelemetrySrcGen.Abstractions</AssemblyName>
-		<Title>Builder Pattern Abstractions </Title>
+		<Title>Telemetry Source Generator Abstractions</Title>
 		<PackageReadmeFile>ReadMe.md</PackageReadmeFile>
-		<!--<IncludeBuildOutput>false</IncludeBuildOutput>-->
-		<LangVersion>latest</LangVersion>
+		<Authors>Andrew Matthews</Authors>
+		<IncludeBuildOutput>false</IncludeBuildOutput>
 	</PropertyGroup>
 
 	<ItemGroup>

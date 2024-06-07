@@ -7,19 +7,22 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TelemetrySrcGen.Abstraction
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TelemetrySrcGen", "TelemetrySrcGen\TelemetrySrcGen.csproj", "{35348B08-4755-4B4A-B45C-23957843BD04}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TelemetrySrcGen.Proxies.Playground", "TelemetrySrcGen.Proxies.Playground\TelemetrySrcGen.Proxies.Playground.csproj", "{836406B6-2C06-4F10-BFFB-2944D5CE75D0}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2CBA8C8C-AA13-442C-9701-8CEFE19B8084}"
 	ProjectSection(SolutionItems) = preProject
 		.dockerignore = .dockerignore
 		.editorconfig = .editorconfig
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
+		.github\workflows\build-publish.yml = .github\workflows\build-publish.yml
 		Directory.Build.props = Directory.Build.props
+		Makefile = Makefile
+		.github\workflows\prepare-nuget.yml = .github\workflows\prepare-nuget.yml
 		ReadMe.md = ReadMe.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Playground", "Playground", "{B5CE5BA1-C12F-4B27-9D9C-66A1232A1C0A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TelemetrySrcGen.Playground", "TelemetrySrcGen.Playground\TelemetrySrcGen.Playground.csproj", "{836406B6-2C06-4F10-BFFB-2944D5CE75D0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

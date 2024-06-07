@@ -70,12 +70,6 @@ internal static class RoslynExtensions
                                });
         return hasAttributes;
 
-        if (node is TypeDeclarationSyntax type)
-        {
-            return type.MatchAttribute(attributeName, cancellationToken);
-        }
-
-        return false;
     }
 
     public static bool MatchMethodAttribute(
@@ -95,13 +89,6 @@ internal static class RoslynExtensions
                                    return match;
                                });
         return hasAttributes;
-
-        if (node is TypeDeclarationSyntax type)
-        {
-            return type.MatchAttribute(attributeName, cancellationToken);
-        }
-
-        return false;
     }
 
     /// <summary>

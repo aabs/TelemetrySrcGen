@@ -2,7 +2,7 @@
   "profiles": {
     "Playground": {
       "commandName": "DebugRoslynComponent",
-      "targetProject": "..\\TelemetrySrcGen.Proxies.Playground\\TelemetrySrcGen.Proxies.Playground.csproj"
+      "targetProject": "..\\TelemetrySrcGen.Playground\\TelemetrySrcGen.Playground.csproj"
     }
   }
 }

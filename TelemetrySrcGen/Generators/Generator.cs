@@ -16,13 +16,6 @@ public partial class Generator : IIncrementalGenerator
 {
     protected const string MethodFieldAttribute = "MeasurementAttribute";
     protected const string TargetAttribute = "TelemetrySourceAttribute";
-    private static bool AttributePredicate(SyntaxNode syntaxNode, CancellationToken cancellationToken)
-    {
-        return syntaxNode.MatchAttribute(TargetAttribute, cancellationToken);
-    }
-
-    #region Initialize
-
     /// <summary>
     /// Called to initialize the generator and register generation steps via callbacks
     /// on the <paramref name="context" />
@@ -65,9 +58,97 @@ public partial class Generator : IIncrementalGenerator
         }
     }
 
-    #endregion // Initialize
+    private static bool AttributePredicate(SyntaxNode syntaxNode, CancellationToken cancellationToken)
+    {
+        return syntaxNode.MatchAttribute(TargetAttribute, cancellationToken);
+    }
+    private void GenerateCounters(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
+    {
+        foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Counter)))
+        {
+            try
+            {
+                if (item is not IFieldSymbol fieldSymbol)
+                    continue;
 
-    #region OnGenerate
+                string fieldName = fieldSymbol.Name;
+                string fieldType = fieldSymbol.Type.Name;
+                builder.AppendLine($$"""
+                    public void Add{{fieldName}}({{fieldType}} value) => telemetryClient.TrackMetric("{{fieldName}}.Counter", value);
+                """);
+            }
+            catch (Exception e)
+            {
+                var diagnostic = Diagnostic.Create(
+                    new DiagnosticDescriptor("TSG004", "Error while generating Counter.",
+                    $"Unknown error during generation: {e.Message}", "CustomErrorCategory",
+                    DiagnosticSeverity.Error, isEnabledByDefault: true),
+                    Location.None);
+                context.ReportDiagnostic(diagnostic);
+            }
+
+
+        }
+    }
+
+    private void GenerateEvents(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
+    {
+        // events make use of partial methods to define what invoking the event would look like. It must have a null result type
+        foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Event)))
+        {
+            try
+            {
+                if (item is not IMethodSymbol methodSymbol)
+                    continue;
+                if (!methodSymbol.IsPartialDefinition)
+                {
+                    continue;
+                }
+
+                string methodName = methodSymbol.Name;
+                builder.AppendLine($$"""
+                        public partial void {{methodName}}(IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null) 
+                          => telemetryClient.TrackEvent({{methodName}}, properties, metrics);
+                    """);
+            }
+            catch (Exception e)
+            {
+                var diagnostic = Diagnostic.Create(
+                    new DiagnosticDescriptor("TSG006", "Error while generating Event.",
+                    $"Unknown error during generation: {e.Message}", "CustomErrorCategory",
+                    DiagnosticSeverity.Error, isEnabledByDefault: true),
+                    Location.None);
+                context.ReportDiagnostic(diagnostic);
+            }
+        }
+    }
+
+    private void GenerateGauges(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
+    {
+        foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Gauge)))
+        {
+            try
+            {
+                if (item is not IFieldSymbol fieldSymbol)
+                    continue;
+
+                string fieldName = fieldSymbol.Name;
+                string fieldType = fieldSymbol.Type.Name;
+                builder.AppendLine($$"""
+                        public void Set{{fieldName}}({{fieldType}} value) => telemetryClient.TrackMetric("{{fieldName}}.Counter", value);
+                    """);
+            }
+            catch (Exception e)
+            {
+                var diagnostic = Diagnostic.Create(
+                    new DiagnosticDescriptor("TSG002", "Error while generating Gauge.",
+                    $"Unknown error during generation: {e.Message}", "CustomErrorCategory",
+                    DiagnosticSeverity.Error, isEnabledByDefault: true),
+                    Location.None);
+                context.ReportDiagnostic(diagnostic);
+            }
+        }
+    }
 
     private void GenerateMetricClass(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax)
     {
@@ -75,8 +156,8 @@ public partial class Generator : IIncrementalGenerator
         var name = typeSymbol.Name;
         var asm = GetType().Assembly.GetName();
         builder.AppendHeader(syntax, typeSymbol);
-        builder.AppendLine("using System.Net.Http.Json;");
         builder.AppendLine();
+        builder.AppendLine("using Microsoft.ApplicationInsights.DataContracts;");
 
         builder.AppendLine($"[System.CodeDom.Compiler.GeneratedCode(\"{asm.Name}\",\"{asm.Version}\")]");
         builder.AppendLine($"public partial class {name} //blah");
@@ -87,24 +168,36 @@ public partial class Generator : IIncrementalGenerator
         GenerateTimers(context, typeSymbol, syntax, builder);
         GenerateEvents(context, typeSymbol, syntax, builder);
         builder.AppendLine("}");
-
         context.AddSource($"{name}.g.cs", builder.ToString());
-
-
+#if DEBUG
+        Debug.WriteLine(builder.ToString());
+#endif
     }
-
-    private void GenerateGauges(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
+    private void GenerateOperations(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
     {
-        foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Gauge)))
+        foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Operation)))
         {
-            if (item is not IFieldSymbol fieldSymbol)
-                continue;
+            try
+            {
+                if (item is not IFieldSymbol fieldSymbol)
+                    continue;
 
-            string fieldName = fieldSymbol.Name;
-            string fieldType = fieldSymbol.Type.Name;
-            builder.AppendLine($$"""
-                    public void Set{{fieldName}}({{fieldType}} value) => _tc.TrackMetric("{{fieldName}}.Counter", value);
-                """);
+                string fieldName = fieldSymbol.Name;
+                string fieldType = fieldSymbol.Type.Name;
+                builder.AppendLine($$"""
+                        public void Start{{fieldName}}() 
+                          => telemetryClient.StartOperation<RequestTelemetry>("{{fieldName}}");
+                    """);
+            }
+            catch (Exception e)
+            {
+                var diagnostic = Diagnostic.Create(
+                    new DiagnosticDescriptor("TSG005", "Error while generating Operation.",
+                    $"Unknown error during generation: {e.Message}", "CustomErrorCategory",
+                    DiagnosticSeverity.Error, isEnabledByDefault: true),
+                    Location.None);
+                context.ReportDiagnostic(diagnostic);
+            }
         }
     }
 
@@ -112,69 +205,31 @@ public partial class Generator : IIncrementalGenerator
     {
         foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Duration)))
         {
-            if (item is not IFieldSymbol fieldSymbol)
-                continue;
-
-            string fieldName = fieldSymbol.Name;
-            string fieldType = fieldSymbol.Type.Name;
-            builder.AppendLine($$"""
-                    public IDisposable Record{{fieldName}}Duration(IDictionary<string, string> properties = null)
-                    {
-                        return new TelemetrySrcGen.Abstractions.StopwatchDisposable(this.telemetryClient, "{{fieldName}}.Duration", properties);
-                    }
-                """);
-        }
-    }
-
-    private void GenerateCounters(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
-    {
-        foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Counter)))
-        {
-            if (item is not IFieldSymbol fieldSymbol)
-                continue;
-
-            string fieldName = fieldSymbol.Name;
-            string fieldType = fieldSymbol.Type.Name;
-            builder.AppendLine($$"""
-                    public void Add{{fieldName}}({{fieldType}} value) => _tc.TrackMetric("{{fieldName}}.Counter", value);
-                """);
-        }
-    }
-    private void GenerateOperations(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
-    {
-        foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Operation)))
-        {
-            if (item is not IFieldSymbol fieldSymbol)
-                continue;
-
-            string fieldName = fieldSymbol.Name;
-            string fieldType = fieldSymbol.Type.Name;
-            builder.AppendLine($$"""
-                    public void Start{{fieldName}}() 
-                      => _tc.StartOperation<RequestTelemetry>("{{fieldName}}");
-                """);
-        }
-    }   
-    private void GenerateEvents(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
-    {
-        // events make use of partial methods to define what invoking the event would look like. It must have a null result type
-        foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Event)))
-        {
-            if (item is not IMethodSymbol methodSymbol)
-                continue;
-            if (!methodSymbol.IsPartialDefinition)
+            try
             {
-                continue;
-            }
+                if (item is not IFieldSymbol fieldSymbol)
+                    continue;
 
-            string methodName = methodSymbol.Name;
-            builder.AppendLine($$"""
-                    public partial void {{methodName}}(IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null) 
-                      => _tc.TrackEvent({{methodName}}, properties, metrics);
-                """);
+                string fieldName = fieldSymbol.Name;
+                string fieldType = fieldSymbol.Type.Name;
+                builder.AppendLine($$"""
+                        public IDisposable Record{{fieldName}}Duration(IDictionary<string, string> properties = null)
+                        {
+                            return new TelemetrySrcGen.Abstractions.StopwatchDisposable(this.telemetryClient, "{{fieldName}}.Duration", properties);
+                        }
+                    """);
+            }
+            catch (Exception e)
+            {
+                var diagnostic = Diagnostic.Create(
+                    new DiagnosticDescriptor("TSG003", "Error while generating Timer.",
+                    $"Unknown error during generation: {e.Message}", "CustomErrorCategory",
+                    DiagnosticSeverity.Error, isEnabledByDefault: true),
+                    Location.None);
+                context.ReportDiagnostic(diagnostic);
+            }
         }
     }
-
     private void OnGenerate(
                     SourceProductionContext context,
             Compilation compilation,
@@ -186,20 +241,6 @@ public partial class Generator : IIncrementalGenerator
         if (cancellationToken.IsCancellationRequested)
             return;
 
-        #region Error Handling
-        /*
-        if (!typeSymbol.TryGetValue(TargetAttribute, "template", out string clsTemplate))
-        {
-            var diagnostic = Diagnostic.Create(
-                new DiagnosticDescriptor("HTTPGEN: 006", "template is missing",
-                $"{typeSymbol.Name}, template is missing", "CustomErrorCategory",
-                DiagnosticSeverity.Error, isEnabledByDefault: true),
-                Location.None);
-            context.ReportDiagnostic(diagnostic);
-        }
-        */
-        #endregion // Error Handling
-
         try
         {
             GenerateMetricClass(context, typeSymbol, syntax);
@@ -207,170 +248,13 @@ public partial class Generator : IIncrementalGenerator
         catch (Exception e)
         {
             var diagnostic = Diagnostic.Create(
-                new DiagnosticDescriptor("METGEN: 001", "Unknown error during generation",
+                new DiagnosticDescriptor("TSG001", "Unknown error during generation",
                 $"Unknown error during generation: {e.Message}", "CustomErrorCategory",
-                DiagnosticSeverity.Error, isEnabledByDefault: true),
+                DiagnosticSeverity.Warning, isEnabledByDefault: true),
                 Location.None);
             context.ReportDiagnostic(diagnostic);
-
         }
     }
-    /*
-private void GenerateClass(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax)
-{
-   StringBuilder builder = new StringBuilder();
-   builder.AppendHeader(syntax, typeSymbol);
-
-   builder.AppendLine("using System.Net.Http.Json;");
-   builder.AppendLine();
-
-   string type = syntax.Keyword.Text;
-   string name = typeSymbol.Name.Substring(1);
-
-   var asm = GetType().Assembly.GetName();
-   builder.AppendLine($"[System.CodeDom.Compiler.GeneratedCode(\"{asm.Name}\",\"{asm.Version}\")]");
-   builder.AppendLine($"internal class {name}: {typeSymbol.Name}"); // REMOVE `I`
-   builder.AppendLine("{");
-   builder.AppendLine("\tprivate readonly HttpClient _httpClient;");
-   builder.AppendLine();
-   builder.AppendLine($"\tpublic {name}(HttpClient httpClient)");
-   builder.AppendLine("\t{");
-   builder.AppendLine("\t\t_httpClient = httpClient;");
-   builder.AppendLine("\t}");
-
-
-   foreach (var item in typeSymbol.GetMembers())
-   {
-       IMethodSymbol methodSymbol = item as IMethodSymbol;
-       if (methodSymbol == null)
-           continue;
-
-       string mtdName = methodSymbol.Name;
-
-       #region string mtdTemplate = ...
-
-       string? mtdTemplate;
-       methodSymbol.TryGetValue(MethodFieldAttribute, "template", out mtdTemplate);
-
-       #endregion // string mtdTemplate = ...
-
-       var symbolPrms = methodSymbol.Parameters;
-
-       #region string verb = ...
-
-       string verb = "Unknown";
-       if (!methodSymbol.TryGetValue(TargetAttribute, "verb", out verb) || verb == "Unknown")
-       {
-           if (symbolPrms.Length == 0)
-               verb = "GET";
-           else if (symbolPrms.Length == 1)
-               verb = "POST";
-           else
-           {
-               var diagnostic = Diagnostic.Create(
-                   new DiagnosticDescriptor("HTTPGEN: 002", "Failed to infer the verb",
-                   $"{typeSymbol.Name}.{methodSymbol.Name},Failed to infer the verb ", "CustomErrorCategory",
-                   DiagnosticSeverity.Error, isEnabledByDefault: true),
-                   Location.None);
-               context.ReportDiagnostic(diagnostic);
-               break;
-           }
-       }
-
-       if ((verb == "POST" || verb == "PUT") && symbolPrms.Length != 1)
-       {
-           var diagnostic = Diagnostic.Create(
-               new DiagnosticDescriptor("HTTPGEN: 003", "POST/PUT expecting a single parameter",
-               $"{typeSymbol.Name}.{methodSymbol.Name}, POST/PUT expecting a single parameter", "CustomErrorCategory",
-               DiagnosticSeverity.Error, isEnabledByDefault: true),
-               Location.None);
-           context.ReportDiagnostic(diagnostic);
-           break;
-       }
-
-       if (verb == "Get" && symbolPrms.Length != 0)
-       {
-           var diagnostic = Diagnostic.Create(
-               new DiagnosticDescriptor("HTTPGEN: 004", "GET isn't expecting parameters",
-               $"{typeSymbol.Name}.{methodSymbol.Name}, GET isn't expecting parameters", "CustomErrorCategory",
-               DiagnosticSeverity.Error, isEnabledByDefault: true),
-               Location.None);
-           context.ReportDiagnostic(diagnostic);
-           break;
-       }
-
-       #endregion // string verb = ...
-
-       var mtdSyntax = syntax.Members.Select(m => m as MethodDeclarationSyntax)
-                               .FirstOrDefault(m => m != null && m.Identifier.Text == mtdName) ?? throw new NullReferenceException(mtdName);
-       var retType = mtdSyntax.ReturnType.ToString();
-       var symbolRetTypeSymbol = methodSymbol.ReturnType as INamedTypeSymbol;
-       var symbolRetType = symbolRetTypeSymbol?.TypeArguments.First().Name;
-
-       #region Error Handling
-
-       if (!retType.StartsWith("Task") && !retType.StartsWith("ValueTask"))
-       {
-           var diagnostic = Diagnostic.Create(
-               new DiagnosticDescriptor("HTTPGEN: 001", "Expecting return type of Task<T> or ValueTask<T>",
-               $"{typeSymbol.Name}.{methodSymbol.Name}, must return  Task<T> or ValueTask<T>'", "CustomErrorCategory",
-               DiagnosticSeverity.Error, isEnabledByDefault: true),
-               Location.None);
-           context.ReportDiagnostic(diagnostic);
-           break;
-       }
-
-       #endregion // Error Handling
-
-       string template = clsTemplate;
-       if (!string.IsNullOrEmpty(mtdTemplate))
-           template = $"{template}/{mtdTemplate}";
-       builder.AppendLine();
-       if (verb == "GET")
-       {
-           builder.AppendLine($"\tasync {retType} {typeSymbol.Name}.{mtdName}()");
-           builder.AppendLine("\t{");
-           builder.AppendLine($"\t\tvar result = await _httpClient.GetFromJsonAsync<{symbolRetType}>(\"{template}\");");
-           builder.AppendLine("\t\treturn result;");
-           builder.AppendLine("\t}");
-       }
-       else
-       {
-           builder.AppendLine($"\tasync {retType} {typeSymbol.Name}.{mtdName}({symbolPrms[0].Type.Name} payload)");
-           builder.AppendLine("\t{");
-           builder.AppendLine("\t\tvar content = JsonContent.Create(payload);");
-           builder.AppendLine($"\t\tvar response = await _httpClient.PostAsync(\"{template}\", content);");
-           builder.AppendLine("\t\tif(!response.IsSuccessStatusCode)");
-           builder.AppendLine($"\t\t\tthrow new HttpRequestException(\"{template} failed\", null, response.StatusCode);");
-           builder.AppendLine($"\t\tvar result = await response.Content.ReadFromJsonAsync<{symbolRetType}>();");
-           builder.AppendLine("\t\treturn result;");
-           builder.AppendLine("\t}");
-       }
-
-   }
-
-   builder.AppendLine("}");
-
-   context.AddSource($"{name}.generated.cs", builder.ToString());
-
-   builder = new StringBuilder();
-   builder.AppendHeader(syntax, typeSymbol);
-   builder.AppendLine("using Microsoft.Extensions.DependencyInjection;");
-   builder.AppendLine();
-   builder.AppendLine($"[System.CodeDom.Compiler.GeneratedCode(\"{asm.Name}\",\"{asm.Version}\")]");
-   builder.AppendLine($"public static class {name}DiExtensions");
-   builder.AppendLine("{");
-   builder.AppendLine($"\tpublic static IServiceCollection Add{name}Client(this IServiceCollection services, Uri baseUrl)");
-   builder.AppendLine("\t{");
-   builder.AppendLine($"\t\tservices.AddHttpClient<{typeSymbol.Name}, {name}>(\"{clsTemplate}\", client =>  client.BaseAddress = baseUrl);");
-   builder.AppendLine("\treturn services;");
-   builder.AppendLine("\t}");
-   builder.AppendLine("}");
-
-   context.AddSource($"{name}DiExtensions.generated.cs", builder.ToString());
-}
-*/
-    #endregion // OnGenerate
 }
 
 #pragma warning restore HAA0401 // Possible allocation of reference type enumerator

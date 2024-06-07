@@ -5,15 +5,30 @@ A simple source generator to create the boilerplate code needed to report perfor
 ## Usage
 
 ```csharp
+using Microsoft.ApplicationInsights;
 
 [TelemetrySource]
-public partial class MyIngestionTelemetry : TelemetrySource
+public partial class MyIngestionTelemetry
 {
-  [TelemetryProperty]
-  public double IngestionTime { get; set; }
+    private TelemetryClient telemetryClient;
+    public MyIngestionTelemetry(TelemetryClient telemetryClient)
+    {
+        this.telemetryClient = telemetryClient;
+    }
 
-  [Timer]
-  public void Ingestion();
+    [Measurement(MetricKind.Duration)]
+    public bool IngestionProcess ;
+
+    [Measurement(MetricKind.Duration)]
+    public bool DeliveryTime;
+
+    [Measurement(MetricKind.Counter)]
+    public double DataPointsReceived;
+
+    [Measurement(MetricKind.Operation)]
+    public bool CallAPI;
+    
+    [Measurement(MetricKind.Event)]
+    public partial void OnPollingSucceeded(IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null); 
 }
-
 ```

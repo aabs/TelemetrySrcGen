@@ -1,6 +1,6 @@
 <Project>
 	<PropertyGroup>
-		<Version>1.1.3</Version>
+		<Version>1.1.4</Version>
 		<PackageReleaseNotes>A simple source generator to create the boilerplate code needed to report performance metrics via App Insights.
 		</PackageReleaseNotes>
 	</PropertyGroup>

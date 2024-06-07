@@ -1,6 +1,6 @@
 ﻿# TelemetrySrcGen
 
-A simple source generator to create the boilerplate code needed to report performance metrics via Open Telemetry and App Insights.
+A simple source generator to create the boilerplate code needed to report performance metrics via App Insights.
 
 The aim of the thing is to let you define what you need in the form of some fields and let the source generator create the methods to drive app insights for you.
 

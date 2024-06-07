@@ -1,4 +1,6 @@
-﻿using System.Collections.Immutable;
+﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+using System.Collections.Immutable;
 using System.Text;
 
 using Microsoft.CodeAnalysis;

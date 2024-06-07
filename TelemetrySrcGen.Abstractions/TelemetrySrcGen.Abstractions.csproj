@@ -10,6 +10,14 @@
 		<PackageReadmeFile>ReadMe.md</PackageReadmeFile>
 		<Authors>Andrew Matthews</Authors>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
+		<PackageProjectUrl>https://github.com/aabs/TelemetrySrcGen</PackageProjectUrl>
+	</PropertyGroup>
+	
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Gen|AnyCPU'">
+	  <Optimize>True</Optimize>
+	</PropertyGroup>
+	<PropertyGroup>
+		<NoWarn>NU5128</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -21,7 +29,6 @@
 
 	<ItemGroup>
 	  <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0" />
-	  <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>

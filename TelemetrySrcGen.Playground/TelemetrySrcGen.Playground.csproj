@@ -4,16 +4,16 @@
 		<OutputType>Exe</OutputType>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	</PropertyGroup>
+	<PropertyGroup>
+		<NoWarn>CS1591</NoWarn>
+		<NoWarn>NU5128</NoWarn>
+	</PropertyGroup>
 
 	<ItemGroup>
-		<Content Include="appsettings.json">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</Content>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\TelemetrySrcGen.Abstractions\TelemetrySrcGen.Abstractions.csproj"  />
-	  <ProjectReference Include="..\TelemetrySrcGen\TelemetrySrcGen.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+		<ProjectReference Include="..\TelemetrySrcGen.Abstractions\TelemetrySrcGen.Abstractions.csproj">
+		  <ReferenceOutputAssembly>True</ReferenceOutputAssembly>
+		</ProjectReference>
+		<ProjectReference Include="..\TelemetrySrcGen\TelemetrySrcGen.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />

@@ -12,7 +12,10 @@
 		<IsRoslynComponent>true</IsRoslynComponent>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 	</PropertyGroup>
-	
+		<PropertyGroup>
+		<NoWarn>NU5128</NoWarn>
+	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(Configuration)' != 'Gen'">
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 	</PropertyGroup>

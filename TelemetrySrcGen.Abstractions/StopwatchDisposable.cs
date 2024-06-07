@@ -1,4 +1,6 @@
-﻿using Microsoft.ApplicationInsights;
+﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+using Microsoft.ApplicationInsights;
 using System.Diagnostics;
 using System.Linq;
 
@@ -9,9 +11,9 @@ public class StopwatchDisposable : IDisposable
     private readonly Stopwatch _stopwatch;
     private readonly TelemetryClient tc;
     private readonly string metricName;
-    private readonly IDictionary<string, string> properties;
+    private readonly IDictionary<string, string>? properties;
 
-    public StopwatchDisposable(TelemetryClient tc, string metricName, IDictionary<string, string> properties = null)
+    public StopwatchDisposable(TelemetryClient tc, string metricName, IDictionary<string, string>? properties = null)
     {
         if (string.IsNullOrWhiteSpace(metricName))
         {

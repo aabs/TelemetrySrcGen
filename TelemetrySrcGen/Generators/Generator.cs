@@ -1,6 +1,8 @@
 ﻿#pragma warning disable HAA0301 // Closure Allocation Source
 #pragma warning disable HAA0601 // Value type to reference type conversion causing boxing allocation
 #pragma warning disable HAA0401 // Possible allocation of reference type enumerator
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text;
@@ -16,6 +18,7 @@ public partial class Generator : IIncrementalGenerator
 {
     protected const string MethodFieldAttribute = "MeasurementAttribute";
     protected const string TargetAttribute = "TelemetrySourceAttribute";
+
     /// <summary>
     /// Called to initialize the generator and register generation steps via callbacks
     /// on the <paramref name="context" />
@@ -24,11 +27,11 @@ public partial class Generator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         IncrementalValuesProvider<SyntaxAndSymbol> classDeclarations =
-                context.SyntaxProvider
+            context.SyntaxProvider
                     .CreateSyntaxProvider(
                         predicate: AttributePredicate,
                         transform: static (ctx, _) => ToGenerationInput(ctx))
-                    .Where(static m => m is not null);
+                   .Where(static m => m is not null);
 
         IncrementalValueProvider<(Compilation, ImmutableArray<SyntaxAndSymbol>)> compilationAndClasses
             = context.CompilationProvider.Combine(classDeclarations.Collect());
@@ -38,6 +41,11 @@ public partial class Generator : IIncrementalGenerator
 
         static SyntaxAndSymbol ToGenerationInput(GeneratorSyntaxContext context)
         {
+            if (context.SemanticModel == null)
+            {
+                throw new NullReferenceException("Semantic model is null");
+            }
+
             var declarationSyntax = (TypeDeclarationSyntax)context.Node;
 
             var symbol = context.SemanticModel.GetDeclaredSymbol(declarationSyntax);
@@ -45,10 +53,11 @@ public partial class Generator : IIncrementalGenerator
             return new SyntaxAndSymbol(declarationSyntax, namedSymbol);
         }
 
+
         void Generate(
-                       SourceProductionContext spc,
-                       (Compilation compilation,
-                       ImmutableArray<SyntaxAndSymbol> items) source)
+                      SourceProductionContext spc,
+                      (Compilation compilation,
+                          ImmutableArray<SyntaxAndSymbol> items) source)
         {
             var (compilation, items) = source;
             foreach (SyntaxAndSymbol item in items)
@@ -64,6 +73,24 @@ public partial class Generator : IIncrementalGenerator
     }
     private void GenerateCounters(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
     {
+        if (typeSymbol is null)
+        {
+            Debug.WriteLine($"Error: {nameof(typeSymbol)} is null");
+            return;
+        }
+
+        if (syntax is null)
+        {
+            Debug.WriteLine($"Error: {nameof(syntax)} is null");
+            return;
+        }
+
+        if (builder is null)
+        {
+            Debug.WriteLine($"Error: {nameof(builder)} is null");
+            return;
+        }
+
         foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Counter)))
         {
             try
@@ -93,6 +120,24 @@ public partial class Generator : IIncrementalGenerator
 
     private void GenerateEvents(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
     {
+        if (typeSymbol is null)
+        {
+            Debug.WriteLine($"Error: {nameof(typeSymbol)} is null");
+            return;
+        }
+
+        if (syntax is null)
+        {
+            Debug.WriteLine($"Error: {nameof(syntax)} is null");
+            return;
+        }
+
+        if (builder is null)
+        {
+            Debug.WriteLine($"Error: {nameof(builder)} is null");
+            return;
+        }
+
         // events make use of partial methods to define what invoking the event would look like. It must have a null result type
         foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Event)))
         {
@@ -125,6 +170,24 @@ public partial class Generator : IIncrementalGenerator
 
     private void GenerateGauges(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
     {
+        if (typeSymbol is null)
+        {
+            Debug.WriteLine($"Error: {nameof(typeSymbol)} is null");
+            return;
+        }
+
+        if (syntax is null)
+        {
+            Debug.WriteLine($"Error: {nameof(syntax)} is null");
+            return;
+        }
+
+        if (builder is null)
+        {
+            Debug.WriteLine($"Error: {nameof(builder)} is null");
+            return;
+        }
+
         foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Gauge)))
         {
             try
@@ -152,15 +215,27 @@ public partial class Generator : IIncrementalGenerator
 
     private void GenerateMetricClass(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax)
     {
+        if (typeSymbol is null)
+        {
+            Debug.WriteLine($"Error: {nameof(typeSymbol)} is null");
+            return;
+        }
+
+        if (syntax is null)
+        {
+            Debug.WriteLine($"Error: {nameof(syntax)} is null");
+            return;
+        }
+
         StringBuilder builder = new StringBuilder();
         var name = typeSymbol.Name;
-        var asm = GetType().Assembly.GetName();
+        //var asm = GetType().Assembly.GetName();
         builder.AppendHeader(syntax, typeSymbol);
         builder.AppendLine();
         builder.AppendLine("using Microsoft.ApplicationInsights.DataContracts;");
 
-        builder.AppendLine($"[System.CodeDom.Compiler.GeneratedCode(\"{asm.Name}\",\"{asm.Version}\")]");
-        builder.AppendLine($"public partial class {name} //blah");
+        //builder.AppendLine($"[System.CodeDom.Compiler.GeneratedCode(\"{asm.Name}\",\"{asm.Version}\")]");
+        builder.AppendLine($"public partial class {name}");
         builder.AppendLine("{");
         GenerateCounters(context, typeSymbol, syntax, builder);
         GenerateGauges(context, typeSymbol, syntax, builder);
@@ -175,6 +250,24 @@ public partial class Generator : IIncrementalGenerator
     }
     private void GenerateOperations(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
     {
+        if (typeSymbol is null)
+        {
+            Debug.WriteLine($"Error: {nameof(typeSymbol)} is null");
+            return;
+        }
+
+        if (syntax is null)
+        {
+            Debug.WriteLine($"Error: {nameof(syntax)} is null");
+            return;
+        }
+
+        if (builder is null)
+        {
+            Debug.WriteLine($"Error: {nameof(builder)} is null");
+            return;
+        }
+
         foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Operation)))
         {
             try
@@ -203,6 +296,24 @@ public partial class Generator : IIncrementalGenerator
 
     private void GenerateTimers(SourceProductionContext context, INamedTypeSymbol typeSymbol, TypeDeclarationSyntax syntax, StringBuilder builder)
     {
+        if (typeSymbol is null)
+        {
+            Debug.WriteLine($"Error: {nameof(typeSymbol)} is null");
+            return;
+        }
+
+        if (syntax is null)
+        {
+            Debug.WriteLine($"Error: {nameof(syntax)} is null");
+            return;
+        }
+
+        if (builder is null)
+        {
+            Debug.WriteLine($"Error: {nameof(builder)} is null");
+            return;
+        }
+
         foreach (var item in typeSymbol.GetMembers().Where(m => m.HasMeasurementAttribute(MetricKind.Duration)))
         {
             try
@@ -230,28 +341,38 @@ public partial class Generator : IIncrementalGenerator
             }
         }
     }
-    private void OnGenerate(
-                    SourceProductionContext context,
-            Compilation compilation,
-            SyntaxAndSymbol input)
+    private void OnGenerate(SourceProductionContext context,
+                            Compilation compilation,
+                            SyntaxAndSymbol input)
     {
-        INamedTypeSymbol typeSymbol = input.Symbol;
-        TypeDeclarationSyntax syntax = input.Syntax;
-        var cancellationToken = context.CancellationToken;
-        if (cancellationToken.IsCancellationRequested)
+        if (context.CancellationToken.IsCancellationRequested)
             return;
+
+        if (compilation is null)
+        {
+            Debug.WriteLine($"Error: compilation is null");
+            return;
+        }
+
+        if (input is null)
+        {
+            Debug.WriteLine($"Error: input is null");
+            return;
+        }
 
         try
         {
-            GenerateMetricClass(context, typeSymbol, syntax);
+            GenerateMetricClass(context, input.Symbol, input.Syntax);
+            Debug.WriteLine($"Generated class code for {input.Symbol.Name}");
         }
         catch (Exception e)
         {
+            Debug.WriteLine($"Error: {e.Message}");
             var diagnostic = Diagnostic.Create(
                 new DiagnosticDescriptor("TSG001", "Unknown error during generation",
                 $"Unknown error during generation: {e.Message}", "CustomErrorCategory",
                 DiagnosticSeverity.Warning, isEnabledByDefault: true),
-                Location.None);
+                input.Symbol.Locations[0]);
             context.ReportDiagnostic(diagnostic);
         }
     }

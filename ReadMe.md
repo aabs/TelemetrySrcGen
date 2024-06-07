@@ -2,7 +2,7 @@
 
 A simple source generator to create the boilerplate code needed to report performance metrics via App Insights.
 
-The aim of the thing is to let you define what you need in the form of some fields and let the source generator create the methods to drive app insights for you.
+TelemetrySrcGen lets you define telemetry metrics in the form of simple fields and the source generator creates the methods to send metrics to app insights for you.
 
 ## Usage
 
